@@ -1,0 +1,12 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Symlinks
+*.symlink filter=symlink
+
+# Linguist
+*.as   linguist-language=ActionScript
+*.png  binary
+*.fla  binary
+*.swf  binary
+*.swc  binary
