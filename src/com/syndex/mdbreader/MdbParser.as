@@ -30,7 +30,7 @@ package com.syndex.mdbreader {
     import com.syndex.mdbreader.enums.ELensConfiguration;
     import com.syndex.mdbreader.enums.EProjection;
     import com.syndex.mdbreader.models.Database;
-    import com.syndex.mdbreader.models.DateTime;
+    import com.syndex.sharedpublic.DateTime;
     import com.syndex.mdbreader.models.Group;
     import com.syndex.mdbreader.models.Record;
     import com.syndex.mdbreader.models.Schema;

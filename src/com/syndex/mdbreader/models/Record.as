@@ -30,6 +30,7 @@ package com.syndex.mdbreader.models {
     import com.syndex.mdbreader.enums.ELensConfiguration;
     import com.syndex.mdbreader.enums.EProjection;
     import com.syndex.mdbreader.util.UInt64;
+    import com.syndex.sharedpublic.DateTime;
 
     /**
      * Media record

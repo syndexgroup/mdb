@@ -1,5 +1,6 @@
 package com.syndex.mdbreader.models {
     import com.syndex.mdbreader.util.UInt64;
+    import com.syndex.sharedpublic.DateTime;
 
     /**
      * Grouped media record
