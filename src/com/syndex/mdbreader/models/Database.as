@@ -23,6 +23,8 @@
 */
 
 package com.syndex.mdbreader.models  {
+    import com.syndex.sharedpublic.Version;
+
     /**
      * A MDB database
      */

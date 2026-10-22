@@ -34,7 +34,7 @@ package com.syndex.mdbreader {
     import com.syndex.mdbreader.models.Group;
     import com.syndex.mdbreader.models.Record;
     import com.syndex.mdbreader.models.Schema;
-    import com.syndex.mdbreader.models.Version;
+    import com.syndex.sharedpublic.Version;
     import com.syndex.mdbreader.util.BinaryReader;
     import com.syndex.mdbreader.util.UInt64;
 
