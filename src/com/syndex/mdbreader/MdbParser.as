@@ -52,6 +52,12 @@ package com.syndex.mdbreader {
         private static const PAGE_SIZE:uint = 512;
         private static const TABLE_SINGLE_EX:uint = 3;
         private static const TABLE_GROUPED_EX:uint = 4;
+        private static const HERO5_SINGLE_MIN_SIZE:uint = 78;
+        private static const HERO8_SINGLE_MIN_SIZE:uint = 151;
+        private static const MAX2_SINGLE_MIN_SIZE:uint = 151;
+        private static const MODERN_SINGLE_MIN_SIZE:uint = 142;
+        private static const HERO5_GROUP_MIN_SIZE:uint = 57;
+        private static const MODERN_GROUP_MIN_SIZE:uint = 81;
         private var _data:ByteArray;
         private var _reader:BinaryReader;
         private var _database:Database;
@@ -370,26 +376,47 @@ package com.syndex.mdbreader {
                 }
 
                 var recordSize:uint = _reader.u32(slot + 4);
-                if (recordSize <= 50 || recordSize >= 200) {
+                var minimumSize:uint = minimumRecordSize(tableId);
+                if (recordSize < minimumSize) {
                     continue;
                 }
 
                 var dataStart:uint = slot + 16;
-                if (dataStart >= _data.length) {
+                if (Number(dataStart) + Number(recordSize) > _data.length) {
                     continue;
                 }
 
                 if (tableId == TABLE_SINGLE_EX) {
-                    parseSingleSlot(slot, dataStart);
+                    parseSingleSlot(slot, dataStart, recordSize);
                 }
                 else {
-                    parseGroupSlot(slot, dataStart);
+                    parseGroupSlot(slot, dataStart, recordSize);
                 }
             }
         }
 
-        private function parseSingleSlot(slot:uint, dataStart:uint):void {
-            var fileHandle:UInt64 = extractSingleFileHandle(dataStart);
+        private function minimumRecordSize(tableId:uint):uint {
+            if (tableId == TABLE_GROUPED_EX) {
+                return _database.schema == Schema.HERO5 ? HERO5_GROUP_MIN_SIZE : MODERN_GROUP_MIN_SIZE;
+            }
+
+            if (_database.schema == Schema.HERO5) {
+                return HERO5_SINGLE_MIN_SIZE;
+            }
+
+            if (_database.schema == Schema.HERO8) {
+                return HERO8_SINGLE_MIN_SIZE;
+            }
+
+            if (_database.schema == Schema.MAX2) {
+                return MAX2_SINGLE_MIN_SIZE;
+            }
+
+            return MODERN_SINGLE_MIN_SIZE;
+        }
+
+        private function parseSingleSlot(slot:uint, dataStart:uint, recordSize:uint):void {
+            var fileHandle:UInt64 = extractSingleFileHandle(dataStart, recordSize);
             if (fileHandle == null || fileHandle.isZero) {
                 return;
             }
@@ -402,16 +429,16 @@ package com.syndex.mdbreader {
             var record:Record;
 
             if (_database.schema == Schema.HERO5) {
-                record = parseHero5Single(dataStart, fileHandle);
+                record = parseHero5Single(dataStart, recordSize, fileHandle);
             }
             else if (_database.schema == Schema.HERO8) {
-                record = parseHero8Single(dataStart);
+                record = parseHero8Single(dataStart, recordSize);
             }
             else if (_database.schema == Schema.MAX2) {
-                record = parseMax2Single(dataStart);
+                record = parseMax2Single(dataStart, recordSize);
             }
             else {
-                record = parseModernSingle(dataStart);
+                record = parseModernSingle(dataStart, recordSize);
             }
 
             if (record == null || record.fileHandle.isZero) {
@@ -423,7 +450,7 @@ package com.syndex.mdbreader {
             _database.records.push(record);
         }
 
-        private function extractSingleFileHandle(dataStart:uint):UInt64 {
+        private function extractSingleFileHandle(dataStart:uint, recordSize:uint):UInt64 {
             var offsets:Array;
 
             if (_database.schema == Schema.HERO5) {
@@ -439,7 +466,7 @@ package com.syndex.mdbreader {
                 offsets = [24, 16, 8];
             }
 
-            var reader:BinaryReader = new BinaryReader(_data, dataStart);
+            var reader:BinaryReader = new BinaryReader(_data, dataStart, recordSize);
 
             for each (var offset:uint in offsets) {
                 var fileHandle:UInt64 = reader.u64(offset);
@@ -451,8 +478,8 @@ package com.syndex.mdbreader {
             return null;
         }
 
-        private function parseHero5Single(dataStart:uint, fileHandle:UInt64):Record {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart);
+        private function parseHero5Single(dataStart:uint, recordSize:uint, fileHandle:UInt64):Record {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart, recordSize);
             var result:Record = new Record();
             result.fileType = EFileType.fromValue(reader.u32(0));
             result.duration = reader.u64(4).toNumber();
@@ -472,8 +499,8 @@ package com.syndex.mdbreader {
             return result;
         }
 
-        private function parseHero8Single(dataStart:uint):Record {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8);
+        private function parseHero8Single(dataStart:uint, recordSize:uint):Record {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8, recordSize - 8);
             var result:Record = new Record();
             result.duration = reader.u32(20);
             result.fileType = EFileType.fromValue(reader.u32(28));
@@ -489,8 +516,8 @@ package com.syndex.mdbreader {
             return result.fileHandle.isZero ? null : result;
         }
 
-        private function parseMax2Single(dataStart:uint):Record {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8);
+        private function parseMax2Single(dataStart:uint, recordSize:uint):Record {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8, recordSize - 8);
             var result:Record = new Record();
             result.fileHandle = reader.u64(0);
 
@@ -506,8 +533,8 @@ package com.syndex.mdbreader {
             return result.fileHandle.isZero ? null : result;
         }
 
-        private function parseModernSingle(dataStart:uint):Record {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8);
+        private function parseModernSingle(dataStart:uint, recordSize:uint):Record {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8, recordSize - 8);
             var result:Record = new Record();
             result.duration = reader.u64(0).toNumber();
             result.size = reader.u64(8).toNumber();
@@ -534,14 +561,14 @@ package com.syndex.mdbreader {
             return result.fileHandle.isZero ? null : result;
         }
 
-        private function parseGroupSlot(slot:uint, dataStart:uint):void {
+        private function parseGroupSlot(slot:uint, dataStart:uint, recordSize:uint):void {
             var result:Group;
 
             if (_database.schema == Schema.HERO5) {
-                result = parseHero5Group(dataStart);
+                result = parseHero5Group(dataStart, recordSize);
             }
             else {
-                result = parseModernGroup(dataStart);
+                result = parseModernGroup(dataStart, recordSize);
             }
 
             if (result == null) {
@@ -560,8 +587,8 @@ package com.syndex.mdbreader {
             }
         }
 
-        private function parseHero5Group(dataStart:uint):Group {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart);
+        private function parseHero5Group(dataStart:uint, recordSize:uint):Group {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart, recordSize);
             var result:Group = new Group();
             result.frameRateDuration = reader.u32(0);
             result.frameRateTimescale = reader.u32(4);
@@ -577,8 +604,8 @@ package com.syndex.mdbreader {
             return result;
         }
 
-        private function parseModernGroup(dataStart:uint):Group {
-            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8);
+        private function parseModernGroup(dataStart:uint, recordSize:uint):Group {
+            var reader:BinaryReader = new BinaryReader(_data, dataStart + 8, recordSize - 8);
             var result:Group = new Group();
             result.fileHandle = reader.u64(0);
             result.frameRateTimescale = reader.u32(8);

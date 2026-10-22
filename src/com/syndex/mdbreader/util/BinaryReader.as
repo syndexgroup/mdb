@@ -29,16 +29,19 @@ package com.syndex.mdbreader.util {
     public final class BinaryReader {
         private var _data:ByteArray;
         private var _base:uint;
+        private var _length:uint;
 
-        public function BinaryReader(data:ByteArray, base:uint = 0) {
+        public function BinaryReader(data:ByteArray, base:uint = 0, length:uint = uint.MAX_VALUE) {
             _data = data;
             _data.endian = Endian.LITTLE_ENDIAN;
             _base = base;
+
+            var available:uint = base <= data.length ? uint(data.length - base) : 0;
+            _length = length < available ? length : available;
         }
 
         public function canRead(offset:uint, count:uint):Boolean {
-            var absolute:Number = Number(_base) + Number(offset);
-            return absolute + count <= _data.length;
+            return Number(offset) + Number(count) <= _length;
         }
 
         public function u8(offset:uint):uint {
