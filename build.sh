@@ -16,4 +16,6 @@ if [ -z "$MDB_VERSION" ]; then
 fi
 
 mkdir -p "$SCRIPT_DIR/out"
+mkdir -p "$SCRIPT_DIR/airpackage/swc"
 compc "-source-path=$SCRIPT_DIR/src" "-include-sources=$SCRIPT_DIR/src" "-output=$SCRIPT_DIR/out/mdb_$MDB_VERSION.swc"
+cp -f "$SCRIPT_DIR/out/mdb_$MDB_VERSION.swc" "$SCRIPT_DIR/airpackage/swc/mdb.swc"

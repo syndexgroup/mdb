@@ -4,16 +4,19 @@ bin-release/
 /out
 [Oo]bj/
 [Bb]in/
+/airpackage/swc
 
 # Other files and folders
 .settings/
 *.bak
 
-# Executables
+# Built binaries
 *.swf
+*.swc
 *.air
 *.ipa
 *.apk
+*.airpackage
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
