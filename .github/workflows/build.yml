@@ -1,0 +1,101 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+
+    env:
+      AIR_SDK_VERSION: 51.3.3.2
+      APM_VERSION: 2.2.0
+      AIR_SDK_DIR: ${{ github.workspace }}\air-sdk
+      APM_DIR: ${{ github.workspace }}\apm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Download AIRSDK
+        shell: pwsh
+        run: |
+          $url = "https://airsdk.harman.com/api/versions/$env:AIR_SDK_VERSION/sdks/AIRSDK_Windows.zip?license=accepted"
+          $zip = "$env:RUNNER_TEMP\air-sdk.zip"
+
+          Write-Host "Downloading AIRSDK $env:AIR_SDK_VERSION..."
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          New-Item -ItemType Directory -Force -Path $env:AIR_SDK_DIR | Out-Null
+          Expand-Archive -Path $zip -DestinationPath $env:AIR_SDK_DIR -Force
+
+      - name: Download APM
+        shell: pwsh
+        run: .\buildtools\Get-AIRPackageManager.ps1 -Version "$env:APM_VERSION" -Destination "$env:APM_DIR"
+
+      - name: Configure SDK
+        shell: pwsh
+        run: |
+          $compc = Get-ChildItem -Path $env:AIR_SDK_DIR -Filter compc.bat -Recurse | Select-Object -First 1
+          if (-not $compc) {
+            throw "Could not find compc.bat in AIR SDK"
+          }
+
+          $bin = $compc.Directory.FullName
+          $sdk = Split-Path $bin -Parent
+
+          Write-Host "AIR SDK at $sdk"
+          Write-Host "AIR SDK bin at $bin"
+
+          "AIR_HOME=$sdk" >> $env:GITHUB_ENV
+          "$bin" >> $env:GITHUB_PATH
+
+      - name: Verify environment
+        shell: cmd
+        run: |
+          echo AIR_HOME=%AIR_HOME%
+          where compc
+          where apm
+          apm -version
+          java -version
+
+      - name: Build SWC
+        shell: cmd
+        run: build.cmd
+
+      - name: Build AIR package
+        shell: cmd
+        run: package.bat
+
+      - name: Show outputs
+        shell: cmd
+        run: |
+          echo Build output:
+          dir out
+          dir *.airpackage
+
+      - name: Upload SWC
+        uses: actions/upload-artifact@v6
+        with:
+          name: mdb-swc
+          path: out/*.swc
+          if-no-files-found: error
+
+      - name: Upload AIR package
+        uses: actions/upload-artifact@v6
+        with:
+          name: mdb-airpackage
+          path: '*.airpackage'
+          if-no-files-found: error
