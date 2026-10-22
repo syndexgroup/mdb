@@ -23,3 +23,5 @@ bin-release/
 # Internal
 Doxyfile
 /_notes
+as3doxygen.cmd
+as3doxygen.py
