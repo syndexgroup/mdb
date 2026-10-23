@@ -130,7 +130,7 @@ package com.syndex.mdbreader.models {
         public var fov:EFieldOfView = EFieldOfView.WIDE;
 
         /**
-         * Native media path populated by MdbParser.resolveFiles
+         * Native media path
          */
         public var resolvedPath:String;
 
