@@ -93,7 +93,8 @@ package com.syndex.mdbreader {
                 return;
             }
 
-            var byDirectory:Object = {};
+            var recordsByDirectory:Object = {};
+            var extensionsByFileType:Dictionary = new Dictionary(true);
             var record:Record;
 
             for each (record in database.records) {
@@ -107,15 +108,38 @@ package com.syndex.mdbreader {
                     continue;
                 }
 
-                var key:String = String(directoryNumber);
-                if (byDirectory[key] == null) {
-                    byDirectory[key] = [];
+                var extensions:Array = extensionsByFileType[record.fileType] as Array;
+                if (extensions == null) {
+                    extensions = EFileType.expectedExtensions(record.fileType);
+                    extensionsByFileType[record.fileType] = extensions;
                 }
 
-                byDirectory[key].push(record);
+                var directoryKey:String = String(directoryNumber);
+                var recordsByFileNumber:Object = recordsByDirectory[directoryKey];
+                if (recordsByFileNumber == null) {
+                    recordsByFileNumber = {};
+                    recordsByDirectory[directoryKey] = recordsByFileNumber;
+                }
+
+                var fileNumberKey:String = String(record.fileNumber);
+                var recordsByExtension:Object = recordsByFileNumber[fileNumberKey];
+                if (recordsByExtension == null) {
+                    recordsByExtension = {};
+                    recordsByFileNumber[fileNumberKey] = recordsByExtension;
+                }
+
+                for each (var extension:String in extensions) {
+                    var indexedRecords:Array = recordsByExtension[extension] as Array;
+                    if (indexedRecords == null) {
+                        indexedRecords = [];
+                        recordsByExtension[extension] = indexedRecords;
+                    }
+
+                    indexedRecords.push(record);
+                }
             }
 
-            for (var directoryKey:String in byDirectory) {
+            for (directoryKey in recordsByDirectory) {
                 var folder:File = dataDirectory.resolvePath(pad3(uint(directoryKey)) + "GOPRO");
                 if (!folder.exists || !folder.isDirectory) {
                     continue;
@@ -130,7 +154,7 @@ package com.syndex.mdbreader {
                     continue;
                 }
 
-                var records:Array = byDirectory[directoryKey] as Array;
+                recordsByFileNumber = recordsByDirectory[directoryKey];
 
                 for each (var file:File in files) {
                     if (file.isDirectory) {
@@ -142,12 +166,18 @@ package com.syndex.mdbreader {
                         continue;
                     }
 
-                    for each (record in records) {
-                        if (record.resolvedPath != null || record.fileNumber != info.fileNumber) {
-                            continue;
-                        }
+                    recordsByExtension = recordsByFileNumber[String(info.fileNumber)];
+                    if (recordsByExtension == null) {
+                        continue;
+                    }
 
-                        if (EFileType.expectedExtensions(record.fileType).indexOf(info.extension) < 0) {
+                    indexedRecords = recordsByExtension[info.extension] as Array;
+                    if (indexedRecords == null) {
+                        continue;
+                    }
+
+                    for each (record in indexedRecords) {
+                        if (record.resolvedPath != null) {
                             continue;
                         }
 
