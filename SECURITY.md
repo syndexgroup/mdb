@@ -8,4 +8,4 @@
 
 ## Reporting a Vulnerability
 
-To report a vulnerability or other security concern, email [security@syndexinstitute.cc](security@syndexinstitute.cc) directly. Do **not** open an issue.
+To report a vulnerability or other security concern, email [secops@syndexmedia.com](secops@syndexmedia.com) directly. Do **not** open an issue.

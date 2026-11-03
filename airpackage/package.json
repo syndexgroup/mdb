@@ -2,7 +2,7 @@
     "id": "com.syndex.mdbreader",
     "name": "mdb",
     "url": "https://github.com/syndexgroup/mdb",
-    "docUrl": "https://go.syndexinstitute.cc/mdb-docs",
+    "docUrl": "https://go.syndexmedia.com/mdb-docs",
     "description": "GoPro MDB Reader",
     "type": "swc",
     "version": "1.0.1",
